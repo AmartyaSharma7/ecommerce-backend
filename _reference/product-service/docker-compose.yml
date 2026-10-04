@@ -1,0 +1,35 @@
+# ============================================================
+# docker-compose.yml — COMPLETE. Nothing to fill in.
+# ============================================================
+# WHAT IT DOES:
+#   Starts a PostgreSQL 16 database in a container so you don't have to
+#   install Postgres on your machine.
+#
+# HOW TO USE:
+#   docker compose up -d      <- start it (run this before your app)
+#   docker compose down       <- stop it
+#   docker compose down -v    <- stop AND delete all data (fresh start)
+#
+# WHY A CONTAINER:
+#   Later you will containerize the services themselves. Getting used to
+#   "my dependencies run in Docker" now makes Phase 6 painless.
+services:
+  postgres:
+    image: postgres:16
+    container_name: product-postgres
+    environment:
+      POSTGRES_DB: product_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:

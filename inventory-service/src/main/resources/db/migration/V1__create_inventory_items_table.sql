@@ -1,0 +1,63 @@
+-- ============================================================
+-- STEP 1 of 9 — FLYWAY MIGRATION V1 — you write the SQL.
+-- ============================================================
+-- WHAT THIS TABLE IS:
+--   One row per product that inventory-service tracks stock for. It answers
+--   one question for the rest of the system: "can I have N of product X?"
+--
+-- WHY product_id IS NOT A FOREIGN KEY:
+--   The products table lives in product_db, a different database owned by a
+--   different service. You cannot point a foreign key across databases, and
+--   you would not want to: that is exactly the coupling database-per-service
+--   exists to prevent. Integrity across services becomes YOUR problem (HTTP
+--   checks, events), not the database's.
+--
+-- WHY name / description / price ARE COPIED HERE:
+--   So inventory can answer a request without calling product-service. This is
+--   deliberate denormalisation. The cost: the copy can go stale. Phase 3 fixes
+--   that with events.
+--
+-- THE NEW COLUMN — version:
+--   Plain integer that Hibernate bumps on every UPDATE. It is what makes
+--   optimistic locking work. The full explanation is in InventoryItem.java.
+--   The database itself does nothing special with it; it is just a number
+--   Hibernate puts in its WHERE clause.
+--
+-- ------------------------------------------------------------
+-- YOUR TASK
+-- ------------------------------------------------------------
+--  1. CREATE TABLE inventory_items with:
+--       id             BIGINT, identity, primary key
+--       product_id     BIGINT        NOT NULL
+--       name           VARCHAR(200)  NOT NULL
+--       description    VARCHAR(1000)
+--       price          NUMERIC(12,2) NOT NULL
+--       available_qty  INTEGER       NOT NULL
+--       reserved_qty   INTEGER       NOT NULL DEFAULT 0
+--       version        BIGINT        NOT NULL DEFAULT 0
+--       created_at     TIMESTAMPTZ   NOT NULL
+--       updated_at     TIMESTAMPTZ
+--
+--  2. Add constraints (separate statements or inline, your choice):
+--       - UNIQUE on product_id   (one inventory row per product — this is the
+--                                 real guarantee, not your existsByProductId)
+--       - CHECK price > 0
+--       - CHECK available_qty >= 0
+--       - CHECK reserved_qty  >= 0
+--
+--  3. Do you need a separate index on product_id? Look at what UNIQUE already
+--     creates in Postgres before you add one.
+--
+--  NOTE: product-service's V1 skipped the UNIQUE / CHECK constraints its own
+--  header asked for. Do not repeat that here — the CHECK on available_qty is
+--  your last line of defence against overselling.
+--
+-- ------------------------------------------------------------
+-- THINK ABOUT IT
+-- ------------------------------------------------------------
+--  - If a bug in Java ever tries to set available_qty to -1, what happens, and
+--    which layer stops it?
+--  - Why is version a column you never write to yourself, yet it must exist in
+--    the schema?
+--  - Product 42 is deleted in product-service. What happens to its row here,
+--    and whose job is it to notice?

@@ -1,0 +1,66 @@
+### ============================================================
+### HTTP test file — open in IntelliJ and click the green arrows.
+### (IntelliJ Community supports this. No Postman needed.)
+### Uncomment and run these AFTER your app starts.
+### ============================================================
+
+### 1. Create a product -> expect 201 Created
+POST http://localhost:8081/api/products
+Content-Type: application/json
+
+{
+  "name": "Mechanical Keyboard",
+  "description": "87-key TKL, brown switches",
+  "price": 4999.00,
+  "stockQty": 25
+}
+
+### 2. Create an INVALID product -> expect 400 with fieldErrors populated
+POST http://localhost:8081/api/products
+Content-Type: application/json
+
+{
+  "name": "",
+  "price": -5,
+  "stockQty": null
+}
+
+### 3. Create a DUPLICATE name -> expect 409 Conflict
+POST http://localhost:8081/api/products
+Content-Type: application/json
+
+{
+  "name": "Mechanical Keyboard",
+  "description": "duplicate on purpose",
+  "price": 100.00,
+  "stockQty": 1
+}
+
+### 4. Get by id -> expect 200
+GET http://localhost:8081/api/products/1
+
+### 5. Get one that does not exist -> expect 404, not 500
+GET http://localhost:8081/api/products/99999
+
+### 6. List all
+GET http://localhost:8081/api/products
+
+### 7. Search by name
+GET http://localhost:8081/api/products?name=keyboard
+
+### 8. Update -> expect 200, and check updated_at changed in the DB
+PUT http://localhost:8081/api/products/1
+Content-Type: application/json
+
+{
+  "name": "Mechanical Keyboard v2",
+  "description": "now with hot-swap sockets",
+  "price": 5499.00,
+  "stockQty": 30
+}
+
+### 9. Delete -> expect 204 No Content
+DELETE http://localhost:8081/api/products/1
+
+### 10. Delete the same one again -> expect 404
+DELETE http://localhost:8081/api/products/1

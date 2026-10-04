@@ -1,0 +1,98 @@
+### ============================================================
+### HTTP test file — open in IntelliJ and click the green arrows.
+### inventory-service runs on 8082. Run these AFTER your app starts.
+### The concurrency test (Checkpoint D) is in the README — it needs a
+### terminal, because this file runs requests one at a time.
+### ============================================================
+
+### 1. Create inventory for product 1 -> expect 201 Created + Location header
+POST http://localhost:8082/api/inventory
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "name": "Mechanical Keyboard",
+  "description": "87-key TKL, brown switches",
+  "price": 4999.00,
+  "availableQty": 10
+}
+
+### 2. Create INVALID inventory -> expect 400 with fieldErrors populated
+POST http://localhost:8082/api/inventory
+Content-Type: application/json
+
+{
+  "productId": null,
+  "name": "",
+  "price": -5,
+  "availableQty": -1
+}
+
+### 3. Create for the SAME productId again -> expect 409 Conflict
+POST http://localhost:8082/api/inventory
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "name": "Duplicate on purpose",
+  "price": 100.00,
+  "availableQty": 1
+}
+
+### 4. Get by productId -> expect 200, reservedQty = 0
+GET http://localhost:8082/api/inventory/1
+
+### 5. Get a productId with no inventory -> expect 404, not 500
+GET http://localhost:8082/api/inventory/99999
+
+### 6. List all
+GET http://localhost:8082/api/inventory
+
+### 7. Reserve 3 of product 1 -> expect 200, availableQty 7, reservedQty 3
+###    Then check the DB: version should have gone from 0 to 1.
+POST http://localhost:8082/api/inventory/reserve
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 3
+}
+
+### 8. Reserve MORE than available -> expect 409 (or 422), InsufficientStock message
+POST http://localhost:8082/api/inventory/reserve
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 1000
+}
+
+### 9. Reserve with an invalid quantity -> expect 400 with fieldErrors
+POST http://localhost:8082/api/inventory/reserve
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 0
+}
+
+### 10. Reserve for a product with no inventory -> expect 404
+POST http://localhost:8082/api/inventory/reserve
+Content-Type: application/json
+
+{
+  "productId": 99999,
+  "quantity": 1
+}
+
+### 11. Seed for Checkpoint D: a product with exactly ONE unit
+POST http://localhost:8082/api/inventory
+Content-Type: application/json
+
+{
+  "productId": 2,
+  "name": "Last Unit Lamp",
+  "description": "only one left — used for the race test",
+  "price": 1299.00,
+  "availableQty": 1
+}
